@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "cafe-advisor/app.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "cafe-advisor/app.py"
+    },
+    {
+      "src": "/logo.jpeg",
+      "dest": "cafe-advisor/static/logo.jpeg"
+    },
+    {
+      "src": "/(.*\\.(css|js|png|jpg|jpeg|gif|svg|ico|html))",
+      "dest": "cafe-advisor/static/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "cafe-advisor/static/index.html"
+    }
+  ]
+}
