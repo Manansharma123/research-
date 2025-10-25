@@ -1,0 +1,15 @@
+# FastAPI and Uvicorn for API server
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+
+# Existing dependencies
+python-dotenv==1.0.0
+groq==0.4.1
+langgraph==0.0.25
+langchain==0.1.0
+langchain-core==0.1.10
+requests==2.31.0
+selenium==4.15.2
+webdriver-manager==4.0.1
+beautifulsoup4==4.12.2
