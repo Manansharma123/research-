@@ -2,26 +2,39 @@
   "version": 2,
   "builds": [
     {
-      "src": "cafe-advisor/app.py",
-      "use": "@vercel/python"
+      "src": "app.py",
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "50mb"
+      }
     }
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "cafe-advisor/app.py"
+      "src": "/api/analyze",
+      "dest": "app.py",
+      "methods": ["POST", "OPTIONS"]
+    },
+    {
+      "src": "/api/health",
+      "dest": "app.py",
+      "methods": ["GET"]
     },
     {
       "src": "/logo.jpeg",
-      "dest": "cafe-advisor/static/logo.jpeg"
+      "dest": "static/logo.jpeg"
     },
     {
       "src": "/(.*\\.(css|js|png|jpg|jpeg|gif|svg|ico|html))",
-      "dest": "cafe-advisor/static/$1"
+      "dest": "static/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "cafe-advisor/static/index.html"
+      "dest": "static/index.html"
     }
-  ]
+  ],
+  "env": {
+    "PYTHON_VERSION": "3.11"
+  },
+  "regions": ["iad1"]
 }

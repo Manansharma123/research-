@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏪 Business Location Advisor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        
+        .main-header {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-top: 1rem;
+        }
+        
+        .sub-header {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #34495e;
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 0.5rem;
+        }
+        
+        .metric-card {
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 10px;
+            border-left: 4px solid var(--secondary-color);
+            color: #000000;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .success-box {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 5px;
+            padding: 1rem;
+            margin: 1rem 0;
+            color: #000000;
+        }
+        
+        .warning-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            border-radius: 5px;
+            padding: 1rem;
+            margin: 1rem 0;
+            color: #000000;
+        }
+        
+        .info-box {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 5px;
+            padding: 1rem;
+            margin: 1rem 0;
+            color: #000000;
+        }
+        
+        .centered-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            margin: 2rem 0;
+        }
+        
+        .input-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            color: #000000;
+        }
+        
+        .example-queries {
+            background-color: #e8f4f8;
+            border-left: 4px solid var(--secondary-color);
+            padding: 1rem;
+            border-radius: 0 5px 5px 0;
+            margin: 1rem 0;
+            color: #000000;
+        }
+        
+        .workflow-step {
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .workflow-step.active {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .workflow-step.completed {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .business-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+        
+        .business-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .branded-badge {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-left: 10px;
+        }
+        
+        .rating-stars {
+            color: #f39c12;
+        }
+        
+        .amenity-tabs .nav-link {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+        
+        .amenity-tabs .nav-link.active {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .progress-bar-custom {
+            height: 10px;
+            border-radius: 5px;
+            background-color: #e9ecef;
+        }
+        
+        .progress-bar-custom .progress {
+            height: 100%;
+            border-radius: 5px;
+            background-color: var(--secondary-color);
+        }
+        
+        .analysis-result {
+            display: none;
+        }
+        
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .property-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .map-container {
+            height: 300px;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+        
+        .suggestion-item {
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--success-color);
+            background-color: #f8f9fa;
+        }
+        
+        .cons-item {
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--danger-color);
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header Section -->
+    <header class="bg-white shadow-sm">
+        <div class="container">
+            <h1 class="main-header">🏪 Business Location Advisor</h1>
+            <p class="text-center text-muted mb-0">AI-Powered Market Analysis for Opening a Business</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container my-4">
+        <!-- Input Section -->
+        <div class="centered-content">
+            <div class="input-container">
+                <h3 class="text-center mb-4">🎯 Describe Your Business Idea</h3>
+                
+                <div class="example-queries">
+                    <p class="mb-2"><strong>Example queries:</strong></p>
+                    <ul class="mb-0 ps-3">
+                        <li>"I want to open a coffee shop near Noble Aurellia"</li>
+                        <li>"Looking to start a sneaker store at Homeland Regalia"</li>
+                        <li>"Want to open a pharmacy near Marbella Twin Towers"</li>
+                    </ul>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="businessQuery" class="form-label">Describe your business idea and location:</label>
+                    <textarea class="form-control" id="businessQuery" rows="3" placeholder="e.g., I want to open a coffee shop near Noble Aurellia"></textarea>
+                    <div class="form-text">Mention both the business type and property name/area</div>
+                </div>
+                
+                <button id="analyzeButton" class="btn btn-primary w-100 py-2">
+                    <i class="fas fa-rocket me-2"></i>Analyze Business Opportunity
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loadingSpinner" class="loading-spinner">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Understanding your query and analyzing business opportunity...</p>
+        </div>
+
+        <!-- Analysis Pipeline -->
+        <div id="analysisPipeline" class="analysis-result mt-4">
+            <h3 class="sub-header">🔄 Analysis Pipeline</h3>
+            <div class="row text-center">
+                <div class="col workflow-step" id="step1">
+                    <h4>💭</h4>
+                    <p>Understanding Intent</p>
+                    <span id="step1Status">⚪ Pending</span>
+                </div>
+                <div class="col workflow-step" id="step2">
+                    <h4>🗺</h4>
+                    <p>Geocoding</p>
+                    <span id="step2Status">⚪ Pending</span>
+                </div>
+                <div class="col workflow-step" id="step3">
+                    <h4>🔍</h4>
+                    <p>Finding Businesses</p>
+                    <span id="step3Status">⚪ Pending</span>
+                </div>
+                <div class="col workflow-step" id="step4">
+                    <h4>📝</h4>
+                    <p>Extracting Reviews</p>
+                    <span id="step4Status">⚪ Pending</span>
+                </div>
+                <div class="col workflow-step" id="step5">
+                    <h4>😊</h4>
+                    <p>Sentiment Analysis</p>
+                    <span id="step5Status">⚪ Pending</span>
+                </div>
+                <div class="col workflow-step" id="step6">
+                    <h4>🏪</h4>
+                    <p>Chain Brands</p>
+                    <span id="step6Status">⚪ Pending</span>
+                </div>
+                <div class="col workflow-step" id="step7">
+                    <h4>🤖</h4>
+                    <p>LLM Recommendations</p>
+                    <span id="step7Status">⚪ Pending</span>
+                </div>
+                <div class="col workflow-step" id="step8">
+                    <h4>📊</h4>
+                    <p>Formatting Results</p>
+                    <span id="step8Status">⚪ Pending</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="analysisResults" class="analysis-result mt-5">
+            <!-- Location Information -->
+            <div class="mb-4">
+                <h3 class="sub-header">📍 Property Information</h3>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="metric-card">
+                            <h5>Latitude</h5>
+                            <p id="latitudeValue" class="h4">0.000000</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="metric-card">
+                            <h5>Longitude</h5>
+                            <p id="longitudeValue" class="h4">0.000000</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="info-box mt-3">
+                    <p class="mb-1"><strong>How it works:</strong></p>
+                    <ul class="mb-0">
+                        <li>🗺 System extracts property location from your query</li>
+                        <li>🔍 Finds businesses near that location</li>
+                        <li>📊 Analyzes market conditions</li>
+                        <li>🤖 Provides recommendations</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Market Overview -->
+            <div class="mb-4">
+                <h3 class="sub-header">📈 Market Overview</h3>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="metric-card text-center">
+                            <h5>🏪 Competitors Found</h5>
+                            <p id="competitorsCount" class="h3">0</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-card text-center">
+                            <h5>⭐ Avg Rating</h5>
+                            <p id="avgRating" class="h3">0.00/5.0</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-card text-center">
+                            <h5>😊 Avg Sentiment</h5>
+                            <p id="avgSentiment" class="h3">0.0%</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-card text-center">
+                            <h5>💬 Reviews Analyzed</h5>
+                            <p id="reviewsAnalyzed" class="h3">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- All Businesses -->
+            <div class="mb-4">
+                <h3 class="sub-header">🏪 All Businesses in Area</h3>
+                
+                <!-- Branded Stores -->
+                <div class="mb-4">
+                    <h4 class="mb-3">🏢 Branded Stores</h4>
+                    <div id="brandedStores" class="row">
+                        <!-- Branded stores will be populated here -->
+                    </div>
+                </div>
+                
+                <!-- Local Businesses -->
+                <div class="mb-4">
+                    <h4 class="mb-3">🏪 Local Businesses</h4>
+                    <div id="localBusinesses" class="row">
+                        <!-- Local businesses will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nearby Amenities -->
+            <div class="mb-4">
+                <h3 class="sub-header">🏥 Nearby Amenities</h3>
+                
+                <ul class="nav nav-tabs amenity-tabs" id="amenityTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="schools-tab" data-bs-toggle="tab" data-bs-target="#schools" type="button" role="tab">Schools</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="hospitals-tab" data-bs-toggle="tab" data-bs-target="#hospitals" type="button" role="tab">Hospitals</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="parks-tab" data-bs-toggle="tab" data-bs-target="#parks" type="button" role="tab">Parks</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="shopping-tab" data-bs-toggle="tab" data-bs-target="#shopping" type="button" role="tab">Shopping</button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content p-3 border border-top-0 rounded-bottom" id="amenityTabContent">
+                    <div class="tab-pane fade show active" id="schools" role="tabpanel">
+                        <div id="schoolsList">
+                            <!-- Schools will be populated here -->
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="hospitals" role="tabpanel">
+                        <div id="hospitalsList">
+                            <!-- Hospitals will be populated here -->
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="parks" role="tabpanel">
+                        <div id="parksList">
+                            <!-- Parks will be populated here -->
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="shopping" role="tabpanel">
+                        <div id="shoppingList">
+                            <!-- Shopping centers will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LLM Recommendations -->
+            <div class="mb-4">
+                <h3 class="sub-header">🤖 AI Recommendations</h3>
+                
+                <!-- Pros -->
+                <div class="mb-4">
+                    <h4 class="mb-3">✅ Opportunities (Pros)</h4>
+                    <div id="prosList">
+                        <!-- Pros will be populated here -->
+                    </div>
+                </div>
+                
+                <!-- Cons -->
+                <div class="mb-4">
+                    <h4 class="mb-3">⚠ Challenges (Cons)</h4>
+                    <div id="consList">
+                        <!-- Cons will be populated here -->
+                    </div>
+                </div>
+                
+                <!-- Suggestions -->
+                <div class="mb-4">
+                    <h4 class="mb-3">💡 Actionable Suggestions</h4>
+                    <div id="suggestionsList">
+                        <!-- Suggestions will be populated here -->
+                    </div>
+                </div>
+                
+                <!-- Final Recommendation -->
+                <div class="mb-4">
+                    <h4 class="mb-3">🎯 Final Recommendation</h4>
+                    <div class="success-box">
+                        <p id="finalRecommendation" class="mb-0"><strong>Analysis complete</strong></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Competitors -->
+            <div class="mb-4">
+                <h3 class="sub-header">🏆 Top Competitors</h3>
+                <div id="topCompetitors" class="row">
+                    <!-- Top competitors will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Sample Properties -->
+        <div class="mt-5">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="sub-header mb-0">📋 Sample Properties</h3>
+                <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#propertyList">
+                    Toggle View
+                </button>
+            </div>
+            <div class="collapse show" id="propertyList">
+                <div class="property-list">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Project Name</th>
+                                <th>Brand Name</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sampleProperties">
+                            <!-- Sample properties will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container text-center">
+            <p class="mb-0">Business Location Advisor &copy; 2023 - AI-Powered Market Analysis</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap & jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Main JavaScript -->
+    <script>
+        // Sample data for demonstration
+        const sampleData = {
+            properties: [
+                { project_name: "Noble Aurellia", brand_name: "Starbucks" },
+                { project_name: "Homeland Regalia", brand_name: "Nike" },
+                { project_name: "Marbella Twin Towers", brand_name: "Walgreens" },
+                { project_name: "Skyline Residences", brand_name: "McDonald's" },
+                { project_name: "Oceanview Apartments", brand_name: "Whole Foods" },
+                { project_name: "Parkside Condos", brand_name: "Chipotle" },
+                { project_name: "Hillside Estates", brand_name: "Target" },
+                { project_name: "Riverside Lofts", brand_name: "Apple Store" },
+                { project_name: "Mountain View Homes", brand_name: "Best Buy" },
+                { project_name: "City Center Plaza", brand_name: "Sephora" }
+            ],
+            analysisResult: {
+                latitude: 12.971598,
+                longitude: 77.594566,
+                area_name: "Bangalore Central",
+                competitors_count: 24,
+                avg_rating: 4.2,
+                avg_sentiment: 78.5,
+                reviews_analyzed: 342,
+                chain_brands: [
+                    {
+                        name: "Starbucks",
+                        brand: "Starbucks",
+                        is_chain: true,
+                        area_name: "MG Road",
+                        distance: 0.5,
+                        rating: 4.5,
+                        reviews_count: 128,
+                        types: "Coffee Shop",
+                        positive_percentage: 85,
+                        reviews_analyzed: 50,
+                        positive_reviews: [
+                            { snippet: "Great coffee and ambiance. Perfect place to work or relax." },
+                            { snippet: "Friendly staff and consistent quality across all locations." }
+                        ],
+                        negative_reviews: [
+                            { snippet: "Sometimes too crowded during peak hours." }
+                        ]
+                    },
+                    {
+                        name: "Blue Tokai Coffee",
+                        brand: "Blue Tokai",
+                        is_chain: true,
+                        area_name: "Church Street",
+                        distance: 0.8,
+                        rating: 4.7,
+                        reviews_count: 96,
+                        types: "Coffee Roasters",
+                        positive_percentage: 90,
+                        reviews_analyzed: 40,
+                        positive_reviews: [
+                            { snippet: "Best artisanal coffee in Bangalore. Love their cold brew!" },
+                            { snippet: "Knowledgeable baristas who really care about coffee quality." }
+                        ],
+                        negative_reviews: [
+                            { snippet: "Limited seating available, often have to wait for a table." }
+                        ]
+                    }
+                ],
+                local_businesses: [
+                    {
+                        name: "Third Wave Coffee",
+                        is_chain: false,
+                        area_name: "Lavelle Road",
+                        distance: 0.3,
+                        rating: 4.6,
+                        reviews_count: 203,
+                        types: "Specialty Coffee",
+                        positive_percentage: 88,
+                        reviews_analyzed: 60,
+                        positive_reviews: [
+                            { snippet: "Amazing specialty coffee with unique brewing methods." },
+                            { snippet: "Great ambiance and perfect for meetings or working." }
+                        ],
+                        negative_reviews: [
+                            { snippet: "Prices are on the higher side compared to other cafes." }
+                        ]
+                    },
+                    {
+                        name: "Coffee Day",
+                        is_chain: false,
+                        area_name: "Brigade Road",
+                        distance: 0.7,
+                        rating: 4.0,
+                        reviews_count: 87,
+                        types: "Cafe",
+                        positive_percentage: 75,
+                        reviews_analyzed: 30,
+                        positive_reviews: [
+                            { snippet: "Reliable coffee chain with consistent taste." },
+                            { snippet: "Convenient locations and quick service." }
+                        ],
+                        negative_reviews: [
+                            { snippet: "Ambiance could be improved, feels a bit dated." }
+                        ]
+                    }
+                ],
+                nearby_amenities: {
+                    schools: [
+                        { name: "St. Joseph's School", rating: 4.5, distance: 1.2, address: "123 Education Lane" },
+                        { name: "Bangalore Public School", rating: 4.3, distance: 0.8, address: "456 Knowledge Street" }
+                    ],
+                    hospitals: [
+                        { name: "Apollo Hospital", rating: 4.7, distance: 2.1, address: "789 Health Avenue" },
+                        { name: "Manipal Hospital", rating: 4.6, distance: 1.8, address: "321 Care Road" }
+                    ],
+                    parks: [
+                        { name: "Cubbon Park", rating: 4.8, distance: 0.5, address: "Central Bangalore" },
+                        { name: "Lalbagh Botanical Garden", rating: 4.7, distance: 3.2, address: "South Bangalore" }
+                    ],
+                    shopping: [
+                        { name: "Phoenix Marketcity", rating: 4.5, distance: 4.5, address: "Whitefield Road" },
+                        { name: "Orion Mall", rating: 4.4, distance: 3.8, address: "Brigade Gateway" }
+                    ]
+                },
+                llm_recommendation: {
+                    pros: [
+                        "High foot traffic area with premium customer demographics",
+                        "Growing specialty coffee culture in the neighborhood",
+                        "Limited direct competition from major international chains",
+                        "Proximity to corporate offices ensures weekday customer flow"
+                    ],
+                    cons: [
+                        "High rental costs in prime location",
+                        "Several established local competitors with loyal customer base",
+                        "Limited parking availability during peak hours",
+                        "Seasonal fluctuations in customer traffic"
+                    ],
+                    suggestions: [
+                        "Focus on unique brewing methods to differentiate from chains",
+                        "Implement loyalty program to retain customers",
+                        "Partner with nearby offices for corporate orders",
+                        "Offer light food options to increase average transaction value"
+                    ],
+                    recommendation: "This location shows strong potential for a specialty coffee shop. The area has high foot traffic, premium demographics, and a growing coffee culture. While competition exists, there is room for differentiation through unique brewing methods and premium experience."
+                },
+                top_competitors: [
+                    {
+                        name: "Third Wave Coffee",
+                        rating: 4.6,
+                        reviews_count: 203,
+                        reviews_analyzed: 60,
+                        positive_percentage: 88,
+                        address: "Lavelle Road, Bangalore",
+                        positive_reviews: [
+                            { snippet: "Amazing specialty coffee with unique brewing methods. The baristas are knowledgeable and the ambiance is perfect for working." },
+                            { snippet: "Best cold brew in the city! Love their seasonal specials and the attention to detail in every cup." }
+                        ],
+                        negative_reviews: [
+                            { snippet: "Prices are significantly higher than other coffee shops in the area. While quality is good, it's not always worth the premium." },
+                            { snippet: "Limited seating and often too noisy for focused work. Gets very crowded during weekends." }
+                        ]
+                    },
+                    {
+                        name: "Starbucks",
+                        rating: 4.5,
+                        reviews_count: 128,
+                        reviews_analyzed: 50,
+                        positive_percentage: 85,
+                        address: "MG Road, Bangalore",
+                        positive_reviews: [
+                            { snippet: "Consistent quality and familiar menu. Great place to meet clients or work with reliable WiFi." },
+                            { snippet: "Friendly staff who remember regular customers. The seasonal drinks are always a treat." }
+                        ],
+                        negative_reviews: [
+                            { snippet: "Too crowded during peak hours with long wait times. Sometimes runs out of popular menu items." },
+                            { snippet: "Less personalized experience compared to local coffee shops. Feels very corporate and generic." }
+                        ]
+                    }
+                ]
+            }
+        };
+
+        // Initialize the application
+        $(document).ready(function() {
+            // Populate sample properties
+            populateSampleProperties();
+            
+            // Set up analyze button click handler
+            $('#analyzeButton').click(function() {
+                const query = $('#businessQuery').val().trim();
+                if (query) {
+                    runAnalysis(query);
+                } else {
+                    alert('Please describe your business idea and location first!');
+                }
+            });
+        });
+
+        // Populate sample properties table
+        function populateSampleProperties() {
+            const propertiesTable = $('#sampleProperties');
+            propertiesTable.empty();
+            
+            sampleData.properties.forEach(property => {
+                propertiesTable.append(`
+                    <tr>
+                        <td>${property.project_name}</td>
+                        <td>${property.brand_name}</td>
+                    </tr>
+                `);
+            });
+        }
+
+        // Run the analysis simulation
+        function runAnalysis(query) {
+            // Show loading spinner
+            $('#loadingSpinner').show();
+            $('.analysis-result').hide();
+            
+            // Reset workflow steps
+            resetWorkflowSteps();
+            
+            // Simulate analysis process with steps
+            simulateWorkflowProgress(() => {
+                // Hide loading spinner
+                $('#loadingSpinner').hide();
+                
+                // Show results
+                displayAnalysisResults(sampleData.analysisResult);
+                $('.analysis-result').show();
+                
+                // Scroll to results
+                $('html, body').animate({
+                    scrollTop: $('#analysisResults').offset().top - 20
+                }, 500);
+            });
+        }
+
+        // Reset all workflow steps to pending
+        function resetWorkflowSteps() {
+            for (let i = 1; i <= 8; i++) {
+                $(`#step${i}`).removeClass('active completed');
+                $(`#step${i}Status`).text('⚪ Pending');
+            }
+        }
+
+        // Simulate workflow progress with delays
+        function simulateWorkflowProgress(callback) {
+            const steps = [
+                { id: 1, name: 'Understanding Intent', delay: 800 },
+                { id: 2, name: 'Geocoding', delay: 1200 },
+                { id: 3, name: 'Finding Businesses', delay: 1500 },
+                { id: 4, name: 'Extracting Reviews', delay: 1800 },
+                { id: 5, name: 'Sentiment Analysis', delay: 1200 },
+                { id: 6, name: 'Chain Brands', delay: 1000 },
+                { id: 7, name: 'LLM Recommendations', delay: 2000 },
+                { id: 8, name: 'Formatting Results', delay: 800 }
+            ];
+            
+            let currentStep = 0;
+            
+            function processNextStep() {
+                if (currentStep < steps.length) {
+                    const step = steps[currentStep];
+                    
+                    // Update UI for current step
+                    $(`#step${step.id}`).addClass('active');
+                    $(`#step${step.id}Status`).text('🔵 Active');
+                    
+                    // Simulate processing time
+                    setTimeout(() => {
+                        // Mark step as completed
+                        $(`#step${step.id}`).removeClass('active').addClass('completed');
+                        $(`#step${step.id}Status`).text('✅ Done');
+                        
+                        currentStep++;
+                        processNextStep();
+                    }, step.delay);
+                } else {
+                    // All steps completed
+                    callback();
+                }
+            }
+            
+            // Start the process
+            processNextStep();
+        }
+
+        // Display analysis results
+        function displayAnalysisResults(result) {
+            // Location Information
+            $('#latitudeValue').text(result.latitude.toFixed(6));
+            $('#longitudeValue').text(result.longitude.toFixed(6));
+            
+            // Market Overview
+            $('#competitorsCount').text(result.competitors_count);
+            $('#avgRating').text(`${result.avg_rating.toFixed(2)}/5.0`);
+            $('#avgSentiment').text(`${result.avg_sentiment.toFixed(1)}%`);
+            $('#reviewsAnalyzed').text(result.reviews_analyzed.toLocaleString());
+            
+            // Branded Stores
+            displayBrandedStores(result.chain_brands);
+            
+            // Local Businesses
+            displayLocalBusinesses(result.local_businesses);
+            
+            // Nearby Amenities
+            displayNearbyAmenities(result.nearby_amenities);
+            
+            // LLM Recommendations
+            displayLLMRecommendations(result.llm_recommendation);
+            
+            // Top Competitors
+            displayTopCompetitors(result.top_competitors);
+        }
+
+        // Display branded stores
+        function displayBrandedStores(brandedStores) {
+            const container = $('#brandedStores');
+            container.empty();
+            
+            if (brandedStores.length === 0) {
+                container.html('<div class="col-12"><p class="text-muted">No branded stores found in this area.</p></div>');
+                return;
+            }
+            
+            brandedStores.forEach(store => {
+                container.append(`
+                    <div class="col-md-6 mb-3">
+                        <div class="business-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <h5 class="mb-1">${store.name}</h5>
+                                <span class="branded-badge">Branded</span>
+                            </div>
+                            <p class="mb-1 text-muted">${store.types}</p>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="rating-stars">
+                                    ${generateStarRating(store.rating)}
+                                </span>
+                                <small class="text-muted">${store.distance} km away</small>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <small><i class="fas fa-map-marker-alt me-1"></i> ${store.area_name}</small>
+                                <small><i class="fas fa-comment me-1"></i> ${store.reviews_count} reviews</small>
+                            </div>
+                            <div class="mt-2">
+                                <div class="progress-bar-custom">
+                                    <div class="progress" style="width: ${store.positive_percentage}%"></div>
+                                </div>
+                                <small class="text-muted">${store.positive_percentage}% positive sentiment</small>
+                            </div>
+                        </div>
+                    </div>
+                `);
+            });
+        }
+
+        // Display local businesses
+        function displayLocalBusinesses(localBusinesses) {
+            const container = $('#localBusinesses');
+            container.empty();
+            
+            if (localBusinesses.length === 0) {
+                container.html('<div class="col-12"><p class="text-muted">No local businesses found in this area.</p></div>');
+                return;
+            }
+            
+            localBusinesses.forEach(business => {
+                const isTopRated = business.rating >= 4.0;
+                const isMostReviewed = business.reviews_count >= 50;
+                const highlightClass = isTopRated || isMostReviewed ? 'border-warning' : '';
+                
+                container.append(`
+                    <div class="col-md-6 mb-3">
+                        <div class="business-card ${highlightClass}">
+                            <h5 class="mb-1">
+                                ${business.name}
+                                ${isTopRated ? '<span class="badge bg-warning ms-1"><i class="fas fa-star"></i> Top Rated</span>' : ''}
+                                ${isMostReviewed ? '<span class="badge bg-info ms-1"><i class="fas fa-comment"></i> Popular</span>' : ''}
+                            </h5>
+                            <p class="mb-1 text-muted">${business.types}</p>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="rating-stars">
+                                    ${generateStarRating(business.rating)}
+                                </span>
+                                <small class="text-muted">${business.distance} km away</small>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <small><i class="fas fa-map-marker-alt me-1"></i> ${business.area_name}</small>
+                                <small><i class="fas fa-comment me-1"></i> ${business.reviews_count} reviews</small>
+                            </div>
+                            <div class="mt-2">
+                                <div class="progress-bar-custom">
+                                    <div class="progress" style="width: ${business.positive_percentage}%"></div>
+                                </div>
+                                <small class="text-muted">${business.positive_percentage}% positive sentiment</small>
+                            </div>
+                        </div>
+                    </div>
+                `);
+            });
+        }
+
+        // Display nearby amenities
+        function displayNearbyAmenities(amenities) {
+            // Schools
+            const schoolsList = $('#schoolsList');
+            schoolsList.empty();
+            
+            if (amenities.schools.length === 0) {
+                schoolsList.html('<p class="text-muted">No schools found nearby.</p>');
+            } else {
+                amenities.schools.forEach(school => {
+                    schoolsList.append(`
+                        <div class="mb-3 p-3 border rounded">
+                            <h5 class="mb-1">${school.name}</h5>
+                            <div class="d-flex justify-content-between">
+                                <span class="rating-stars">${generateStarRating(school.rating)}</span>
+                                <small class="text-muted">${school.distance} km away</small>
+                            </div>
+                            <p class="mb-0 mt-1"><small><i class="fas fa-map-marker-alt me-1"></i> ${school.address}</small></p>
+                        </div>
+                    `);
+                });
+            }
+            
+            // Hospitals
+            const hospitalsList = $('#hospitalsList');
+            hospitalsList.empty();
+            
+            if (amenities.hospitals.length === 0) {
+                hospitalsList.html('<p class="text-muted">No hospitals found nearby.</p>');
+            } else {
+                amenities.hospitals.forEach(hospital => {
+                    hospitalsList.append(`
+                        <div class="mb-3 p-3 border rounded">
+                            <h5 class="mb-1">${hospital.name}</h5>
+                            <div class="d-flex justify-content-between">
+                                <span class="rating-stars">${generateStarRating(hospital.rating)}</span>
+                                <small class="text-muted">${hospital.distance} km away</small>
+                            </div>
+                            <p class="mb-0 mt-1"><small><i class="fas fa-map-marker-alt me-1"></i> ${hospital.address}</small></p>
+                        </div>
+                    `);
+                });
+            }
+            
+            // Parks
+            const parksList = $('#parksList');
+            parksList.empty();
+            
+            if (amenities.parks.length === 0) {
+                parksList.html('<p class="text-muted">No parks found nearby.</p>');
+            } else {
+                amenities.parks.forEach(park => {
+                    parksList.append(`
+                        <div class="mb-3 p-3 border rounded">
+                            <h5 class="mb-1">${park.name}</h5>
+                            <div class="d-flex justify-content-between">
+                                <span class="rating-stars">${generateStarRating(park.rating)}</span>
+                                <small class="text-muted">${park.distance} km away</small>
+                            </div>
+                            <p class="mb-0 mt-1"><small><i class="fas fa-map-marker-alt me-1"></i> ${park.address}</small></p>
+                        </div>
+                    `);
+                });
+            }
+            
+            // Shopping
+            const shoppingList = $('#shoppingList');
+            shoppingList.empty();
+            
+            if (amenities.shopping.length === 0) {
+                shoppingList.html('<p class="text-muted">No shopping centers found nearby.</p>');
+            } else {
+                amenities.shopping.forEach(center => {
+                    shoppingList.append(`
+                        <div class="mb-3 p-3 border rounded">
+                            <h5 class="mb-1">${center.name}</h5>
+                            <div class="d-flex justify-content-between">
+                                <span class="rating-stars">${generateStarRating(center.rating)}</span>
+                                <small class="text-muted">${center.distance} km away</small>
+                            </div>
+                            <p class="mb-0 mt-1"><small><i class="fas fa-map-marker-alt me-1"></i> ${center.address}</small></p>
+                        </div>
+                    `);
+                });
+            }
+        }
+
+        // Display LLM recommendations
+        function displayLLMRecommendations(recommendations) {
+            // Pros
+            const prosList = $('#prosList');
+            prosList.empty();
+            
+            if (recommendations.pros.length === 0) {
+                prosList.html('<p class="text-muted">No pros identified.</p>');
+            } else {
+                recommendations.pros.forEach(pro => {
+                    prosList.append(`<div class="suggestion-item">${pro}</div>`);
+                });
+            }
+            
+            // Cons
+            const consList = $('#consList');
+            consList.empty();
+            
+            if (recommendations.cons.length === 0) {
+                consList.html('<p class="text-muted">No cons identified.</p>');
+            } else {
+                recommendations.cons.forEach(con => {
+                    consList.append(`<div class="cons-item">${con}</div>`);
+                });
+            }
+            
+            // Suggestions
+            const suggestionsList = $('#suggestionsList');
+            suggestionsList.empty();
+            
+            if (recommendations.suggestions.length === 0) {
+                suggestionsList.html('<p class="text-muted">No suggestions available.</p>');
+            } else {
+                recommendations.suggestions.forEach(suggestion => {
+                    suggestionsList.append(`<div class="suggestion-item">${suggestion}</div>`);
+                });
+            }
+            
+            // Final Recommendation
+            $('#finalRecommendation').html(`<strong>${recommendations.recommendation}</strong>`);
+        }
+
+        // Display top competitors
+        function displayTopCompetitors(competitors) {
+            const container = $('#topCompetitors');
+            container.empty();
+            
+            if (competitors.length === 0) {
+                container.html('<div class="col-12"><p class="text-muted">No competitors found in this area.</p></div>');
+                return;
+            }
+            
+            competitors.forEach((competitor, index) => {
+                container.append(`
+                    <div class="col-md-6 mb-4">
+                        <div class="business-card">
+                            <h4 class="mb-3">${index + 1}. ${competitor.name}</h4>
+                            
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <p class="mb-1"><strong>Rating:</strong> ${competitor.rating}/5.0 ⭐</p>
+                                    <p class="mb-1"><strong>Total Reviews:</strong> ${competitor.reviews_count.toLocaleString()}</p>
+                                    <p class="mb-0"><strong>Reviews Analyzed:</strong> ${competitor.reviews_analyzed}</p>
+                                </div>
+                                <div class="col-6">
+                                    <p class="mb-1"><strong>Positive Sentiment:</strong> ${competitor.positive_percentage.toFixed(1)}% 😊</p>
+                                    <p class="mb-1"><strong>Negative Sentiment:</strong> ${(100 - competitor.positive_percentage).toFixed(1)}% 😞</p>
+                                    <p class="mb-0"><strong>Address:</strong> ${competitor.address}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <h6>Top Positive Reviews:</h6>
+                                ${competitor.positive_reviews.map((review, i) => `
+                                    <div class="alert alert-success py-2">
+                                        <small><strong>${i + 1}.</strong> ${review.snippet}</small>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            
+                            <div class="mt-3">
+                                <h6>Top Negative Reviews:</h6>
+                                ${competitor.negative_reviews.map((review, i) => `
+                                    <div class="alert alert-warning py-2">
+                                        <small><strong>${i + 1}.</strong> ${review.snippet}</small>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `);
+            });
+        }
+
+        // Generate star rating HTML
+        function generateStarRating(rating) {
+            const fullStars = Math.floor(rating);
+            const halfStar = rating % 1 >= 0.5;
+            const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+            
+            let stars = '';
+            
+            // Full stars
+            for (let i = 0; i < fullStars; i++) {
+                stars += '<i class="fas fa-star"></i>';
+            }
+            
+            // Half star
+            if (halfStar) {
+                stars += '<i class="fas fa-star-half-alt"></i>';
+            }
+            
+            // Empty stars
+            for (let i = 0; i < emptyStars; i++) {
+                stars += '<i class="far fa-star"></i>';
+            }
+            
+            return stars;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,477 @@
+"""LLM recommendation node for business advisor workflow."""
+
+import json
+import logging
+from typing import Dict, Any, List
+from agents.state import BusinessAnalysisState
+from utils.api_clients import OpenAIClient
+from utils.property_analyzer import PropertyAnalyzer
+
+logger = logging.getLogger(__name__)
+
+
+def llm_recommendation_node(state: BusinessAnalysisState) -> Dict[str, Any]:
+    """
+    Node to generate business recommendations using OpenAI LLM.
+    
+    Args:
+        state: Current state of the workflow
+        
+    Returns:
+        Updated state with LLM recommendations
+    """
+    logger.info("Starting LLM recommendation node")
+    
+    try:
+        # Extract information from state
+        business_type = state.get("business_type", "business")
+        area_name = state.get("area_name", "unknown area")
+        demographic_data = state.get("demographics", {})
+        nearby_businesses = state.get("nearby_businesses", []) or []
+        sentiment_analysis = state.get("sentiment_analysis", {}) or {}
+        chain_brands = state.get("chain_brands", []) or []
+        social_validation = state.get("social_validation", {}) or {}
+        latitude = state.get("latitude", 0.0)
+        longitude = state.get("longitude", 0.0)
+        scraped_data = state.get("scraped_data", []) or []
+        
+        # Log scraped data COMPLETELY before passing to LLM
+        logger.info(f"📊 Scraped data received: {len(scraped_data)} items")
+        if scraped_data:
+            logger.info("=" * 100)
+            logger.info("🌐 COMPLETE SCRAPED DATA (passing to LLM):")
+            logger.info("=" * 100)
+            
+            for i, item in enumerate(scraped_data, 1):  # Show ALL items
+                logger.info(f"\n{'='*50}")
+                logger.info(f"[{i}] {item.get('name') or item.get('school_name', 'N/A')}")
+                logger.info(f"{'='*50}")
+                
+                # Log ALL fields based on data type
+                if 'school_name' in item:
+                    logger.info(f"📚 Type: SCHOOL")
+                    logger.info(f"   ⭐ Rating: {item.get('rating', 'N/A')}")
+                    logger.info(f"   💰 Fees: {item.get('fees', 'N/A')}")
+                    logger.info(f"   📋 Board: {item.get('board', 'N/A')}")
+                    logger.info(f"   🎓 Grade: {item.get('grade', 'N/A')}")
+                    
+                elif 'cuisines' in item:
+                    logger.info(f"🍽️  Type: RESTAURANT/CAFE")
+                    logger.info(f"   ⭐ Rating: {item.get('rating', 'N/A')}")
+                    logger.info(f"   💰 Price for Two: {item.get('price_for_two', 'N/A')}")
+                    logger.info(f"   🍴 Cuisines: {item.get('cuisines', 'N/A')}")
+                    logger.info(f"   📍 Area: {item.get('area', 'N/A')}")
+                    logger.info(f"   🎁 Offers: {item.get('offers', 'N/A')}")
+                    logger.info(f"   📏 Distance: {item.get('distance', 'N/A')}")
+                    
+                elif 'amenities' in item:
+                    logger.info(f"🏨 Type: HOTEL")
+                    logger.info(f"   ⭐ Rating: {item.get('rating', 'N/A')}")
+                    logger.info(f"   💰 Room Price: {item.get('price', 'N/A')}")
+                    logger.info(f"   📍 Location: {item.get('location', 'N/A')}")
+                    logger.info(f"   🏊 Amenities: {item.get('amenities', 'N/A')}")
+                    logger.info(f"   📝 Description: {item.get('description', 'N/A')[:100]}...")
+                    
+                else:
+                    logger.info(f"🏪 Type: GENERAL BUSINESS")
+                    logger.info(f"   ⭐ Rating: {item.get('rating', 'N/A')}")
+                    logger.info(f"   💰 Price: {item.get('price', 'N/A')}")
+                    logger.info(f"   📝 All Data: {item}")
+            
+            logger.info("\n" + "=" * 100)
+            logger.info(f"✅ Total items scraped and sent to LLM: {len(scraped_data)}")
+            logger.info("=" * 100 + "\n")
+        else:
+            logger.info("⚠️  No scraped data available - using existing data sources only")
+        
+        # Initialize property analyzer
+        property_analyzer = PropertyAnalyzer()
+        
+        # Generate property-based analysis
+        property_analysis = property_analyzer.generate_property_analysis(
+            business_type or "business",
+            area_name or "unknown area",
+            latitude,
+            longitude
+        )
+        
+        # Create prompt for LLM with property analysis and scraped data
+        prompt = _create_recommendation_prompt(
+            business_type or "business", 
+            area_name or "unknown area", 
+            demographic_data or {}, 
+            nearby_businesses or [], 
+            sentiment_analysis or {}, 
+            chain_brands or [],
+            social_validation or {},
+            property_analysis or {},
+            scraped_data or []
+        )
+        
+        logger.info(f"Generating recommendations for {business_type} in {area_name}")
+        
+        # Initialize OpenAI client
+        openai_client = OpenAIClient()
+        
+        # Generate recommendations
+        response = openai_client.generate_recommendation(prompt)
+        
+        # Parse JSON response
+        try:
+            recommendation_data = json.loads(response.replace("```json", "").replace("```", ""))
+        except json.JSONDecodeError:
+            # Fallback if JSON parsing fails
+            recommendation_data = {
+                "pros": ["Market analysis completed"],
+                "cons": ["Unable to generate detailed recommendations"],
+                "suggestions": [f"Consider opening a {business_type} in {area_name} after manual review"],
+                "recommendation": f"Further analysis required for {business_type} opportunity in {area_name}"
+            }
+        
+        logger.info("Successfully generated LLM recommendations")
+        
+        # Return updated state
+        return {
+            **state,
+            "llm_recommendation": recommendation_data,
+            "current_step": "llm_recommendation_completed"
+        }
+        
+    except Exception as e:
+        error_msg = f"Error in LLM recommendation node: {str(e)}"
+        logger.error(error_msg)
+        # Provide fallback recommendations
+        fallback_recommendation = {
+            "pros": ["Location identified", "Demographic data available"],
+            "cons": ["Unable to analyze market conditions"],
+            "suggestions": [f"Manually research the {state.get('business_type', 'business')} market in {state.get('area_name', 'the area')}"],
+            "recommendation": f"Manual analysis recommended for {state.get('business_type', 'business')} opportunity"
+        }
+        return {
+            **state,
+            "llm_recommendation": fallback_recommendation,
+            "error": error_msg,
+            "current_step": "llm_recommendation_error"
+        }
+
+
+def _create_recommendation_prompt(business_type: str, area_name: str, 
+                                 demographic_data: Dict[str, Any], 
+                                 nearby_businesses: List[Dict], 
+                                 sentiment_analysis: Dict[str, Any],
+                                 chain_brands: List[Dict[str, Any]],
+                                 social_validation: Dict[str, Any],
+                                 property_analysis: Dict[str, Any],
+                                 scraped_data: List[Dict[str, Any]]) -> str:
+    """
+    Create a prompt for the LLM to generate business recommendations.
+    
+    Args:
+        business_type: Type of business to analyze
+        area_name: Name of the area
+        demographic_data: Demographic information
+        nearby_businesses: List of nearby businesses
+        sentiment_analysis: Sentiment analysis results
+        chain_brands: List of chain brands in the area
+        social_validation: Social media validation results
+        property_analysis: Property-specific analysis
+        scraped_data: Freshly scraped data from web sources
+        
+    Returns:
+        Formatted prompt string
+    """
+    # Prepare business summary
+    business_count = len(nearby_businesses)
+    avg_rating = sum(b.get("rating", 0) or 0 for b in nearby_businesses) / business_count if business_count > 0 else 0
+    
+    # Prepare sentiment summary
+    market_sentiment = sentiment_analysis.get("market_sentiment", {})
+    avg_sentiment = market_sentiment.get("average_sentiment", 0)
+    positive_pct = market_sentiment.get("positive_percentage", 0)
+    negative_pct = market_sentiment.get("negative_percentage", 0)
+    
+    # Get business-specific sentiments
+    business_sentiments = sentiment_analysis.get("business_sentiments", [])
+    
+    prompt = f"""
+You are an expert business consultant evaluating the feasibility of opening a new {business_type} in {area_name}.
+
+CRITICAL INSTRUCTION: You MUST reference SPECIFIC NUMBERS and DATA POINTS from all sources below in every pro, con, and suggestion. Do NOT use vague terms like "high", "low", "good", or "many" without citing exact figures.
+
+═══════════════════════════════════════════════════════════════════════════════
+📊 DATA SOURCE 1: PROPERTY FEATURES
+═══════════════════════════════════════════════════════════════════════════════
+{json.dumps(property_analysis, indent=2)}
+
+KEY METRICS TO REFERENCE:
+- Footfall Score: {property_analysis.get('footfall_score', 'N/A')}
+- Affluence Level: {property_analysis.get('affluence_level', 'N/A')}
+- Brand Density: {property_analysis.get('brand_density', 'N/A')}
+- Retail Presence: {property_analysis.get('retail_presence', 'N/A')}
+
+═══════════════════════════════════════════════════════════════════════════════
+👥 DATA SOURCE 2: DEMOGRAPHICS
+═══════════════════════════════════════════════════════════════════════════════
+{json.dumps(demographic_data, indent=2)}
+
+KEY METRICS TO REFERENCE:
+- Total Population: {demographic_data.get('total_population', 'N/A')}
+- Children (0-18 yrs): {demographic_data.get('children_0_18', 'N/A')}
+- Young Adults (19-35 yrs): {demographic_data.get('young_adults_19_35', 'N/A')}
+- High Income Households (>₹10L): {demographic_data.get('high_income_households', 'N/A')}
+- Middle Income Households (₹5-10L): {demographic_data.get('middle_income_households', 'N/A')}
+
+═══════════════════════════════════════════════════════════════════════════════
+🏪 DATA SOURCE 3: COMPETITOR ANALYSIS
+═══════════════════════════════════════════════════════════════════════════════
+- Number of Competing {business_type}s: {business_count}
+- Average Rating: {avg_rating:.2f}/5.0
+- Market Sentiment Score: {avg_sentiment:.2f} (on -1 to +1 scale)
+- Positive Reviews: {positive_pct:.1f}%
+- Negative Reviews: {negative_pct:.1f}%
+- Total Reviews Analyzed: {sentiment_analysis.get('total_reviews_analyzed', 0)}
+"""
+
+    # Add social media validation if available
+    if social_validation and social_validation.get('status') != 'error':
+        prompt += f"""
+═══════════════════════════════════════════════════════════════════════════════
+📱 DATA SOURCE 4: SOCIAL MEDIA & ONLINE REPUTATION
+═══════════════════════════════════════════════════════════════════════════════
+- Demand Assessment: {social_validation.get('assessment', 'N/A')}
+- Confidence Score: {social_validation.get('confidence_score', 0)}%
+- Local Posts Found: {social_validation.get('total_local_posts', 0)}
+- Hashtags Analyzed: {social_validation.get('hashtags_analyzed', 0)}
+
+INSTRUCTION: If data is insufficient (e.g., <10 posts, low confidence), FLAG this as a gap and recommend specific actions to gather more social validation data.
+"""
+    else:
+        prompt += f"""
+═══════════════════════════════════════════════════════════════════════════════
+📱 DATA SOURCE 4: SOCIAL MEDIA & ONLINE REPUTATION
+═══════════════════════════════════════════════════════════════════════════════
+⚠️  DATA GAP: Social media validation data unavailable or insufficient.
+
+REQUIRED ACTION: Flag this gap in your analysis and recommend:
+1. Manual social media research on local Facebook groups, Instagram hashtags
+2. Survey potential customers in the area
+3. Analyze online forums and review sites for demand signals
+"""
+
+    prompt += """
+COMPETITOR SENTIMENTS:
+"""
+    
+    # Add top 3 competitors
+    for i, biz_sent in enumerate(business_sentiments[:3], 1):
+        metrics = biz_sent.get("metrics", {})
+        prompt += f"""
+{i}. {biz_sent.get('business_name')}
+   - Positive: {metrics.get('positive_percentage', 0):.1f}%
+   - Negative: {metrics.get('negative_percentage', 0):.1f}%
+"""
+    
+    # Add chain brand information
+    if chain_brands:
+        prompt += f"\nCHAIN BRANDS IN AREA:\n"
+        brand_counts = {}
+        for brand in chain_brands:
+            brand_name = brand.get('brand', 'Unknown')
+            brand_counts[brand_name] = brand_counts.get(brand_name, 0) + 1
+        
+        for brand, count in brand_counts.items():
+            prompt += f"- {brand}: {count} location{'s' if count > 1 else ''}\n"
+    
+    # Add scraped data section
+    if scraped_data and len(scraped_data) > 0:
+        prompt += f"""
+═══════════════════════════════════════════════════════════════════════════════
+🌐 DATA SOURCE 5: REAL-TIME WEB-SCRAPED COMPETITOR DATA ({len(scraped_data)} items)
+═══════════════════════════════════════════════════════════════════════════════
+This is FRESH, real-time data scraped directly from competitor websites. Use this to identify:
+- Exact pricing ranges and gaps
+- Rating benchmarks and quality standards
+- Service/product offerings and market gaps
+- Promotional strategies and offers
+
+"""
+        
+        # Limit to first 10 items to avoid token limits
+        for i, item in enumerate(scraped_data[:10], 1):
+            prompt += f"{i}. "
+            
+            # Handle different data formats (schools vs restaurants/hotels)
+            if 'school_name' in item:
+                # School data
+                prompt += f"{item.get('school_name', 'N/A')}\n"
+                if item.get('rating'):
+                    prompt += f"   Rating: {item.get('rating')}\n"
+                if item.get('fees'):
+                    prompt += f"   Fees: {item.get('fees')}\n"
+                if item.get('board'):
+                    prompt += f"   Board: {item.get('board')}\n"
+                if item.get('grade'):
+                    prompt += f"   Grade: {item.get('grade')}\n"
+            elif 'cuisines' in item:
+                # Restaurant/Cafe data (Swiggy Dineout)
+                prompt += f"{item.get('name', 'N/A')}\n"
+                if item.get('rating'):
+                    prompt += f"   Rating: {item.get('rating')}\n"
+                if item.get('price_for_two'):
+                    prompt += f"   Price for Two: {item.get('price_for_two')}\n"
+                if item.get('cuisines'):
+                    prompt += f"   Cuisines: {item.get('cuisines')}\n"
+                if item.get('area'):
+                    prompt += f"   Area: {item.get('area')}\n"
+                if item.get('distance'):
+                    prompt += f"   Distance: {item.get('distance')}\n"
+                if item.get('offers'):
+                    prompt += f"   Offers: {item.get('offers')}\n"
+            elif 'amenities' in item:
+                # Hotel data (Booking.com)
+                prompt += f"{item.get('name', 'N/A')}\n"
+                if item.get('rating'):
+                    prompt += f"   Rating: {item.get('rating')}\n"
+                if item.get('price'):
+                    prompt += f"   Room Price: {item.get('price')}\n"
+                if item.get('location'):
+                    prompt += f"   Location: {item.get('location')}\n"
+                if item.get('amenities'):
+                    prompt += f"   Amenities: {item.get('amenities')}\n"
+                if item.get('description'):
+                    prompt += f"   Description: {item.get('description')[:80]}\n"
+            else:
+                # Generic data
+                prompt += f"{item.get('name', 'N/A')}\n"
+                if item.get('price'):
+                    prompt += f"   Price: {item.get('price')}\n"
+                if item.get('rating'):
+                    prompt += f"   Rating: {item.get('rating')}\n"
+            
+            prompt += "\n"
+        
+        if len(scraped_data) > 10:
+            prompt += f"\n... and {len(scraped_data) - 10} more competitors with similar data\n"
+    
+    prompt += """
+═══════════════════════════════════════════════════════════════════════════════
+📋 OUTPUT REQUIREMENTS
+═══════════════════════════════════════════════════════════════════════════════
+
+Provide your analysis in JSON format with the following structure:
+
+{
+  "pros": [4-5 opportunities],
+  "cons": [4-5 challenges],
+  "suggestions": [6-7 actionable strategies],
+  "recommendation": "one sentence summary"
+}
+
+═══════════════════════════════════════════════════════════════════════════════
+✅ MANDATORY REQUIREMENTS FOR EACH SECTION
+═══════════════════════════════════════════════════════════════════════════════
+
+📌 PROS (4-5 items):
+Each pro MUST:
+✓ Cite at least ONE specific number from the data sources
+✓ Reference which data source it comes from
+✓ Combine insights from multiple sources when possible
+
+Examples:
+✓ GOOD: "Strong target market with 30,652 children (0-18 yrs) and 10,389 high-income households (>₹10L) within 3km radius"
+✗ BAD: "Good demographics in the area"
+
+✓ GOOD: "Footfall score of 66 indicates high visibility, supported by 15 competing cafes with average rating 4.2 showing proven demand"
+✗ BAD: "High footfall and good location"
+
+📌 CONS (4-5 items):
+Each con MUST:
+✓ Cite specific numbers showing the challenge
+✓ Reference competitor data or market gaps
+✓ Identify data gaps if information is missing
+
+Examples:
+✓ GOOD: "High competition with 15 existing cafes averaging 4.2 rating and price range ₹400-₹600 for two (from scraped data)"
+✗ BAD: "High competition in the area"
+
+✓ GOOD: "⚠️ DATA GAP: Only 5 reviews analyzed - insufficient to assess market sentiment. Recommend manual review collection."
+✗ BAD: "Limited review data available"
+
+📌 SUGGESTIONS (6-7 items):
+Each suggestion MUST:
+✓ Be DYNAMIC and based on scraped data analysis
+✓ Include specific numbers (prices, ratings, percentages)
+✓ Identify competitive advantages or market gaps
+✓ Be immediately actionable
+
+═══════════════════════════════════════════════════════════════════════════════
+🎯 CATEGORY-SPECIFIC SUGGESTION TEMPLATES
+═══════════════════════════════════════════════════════════════════════════════
+
+🍽️ FOR CAFES/RESTAURANTS:
+1. PRICING: "Price between ₹X-₹Y for two based on competitor range ₹A-₹B (from scraped data) to position as [budget/mid-range/premium]"
+2. CUISINES: "Offer [specific cuisines] as competitors focus on [scraped cuisines], creating gap in [missing cuisine]"
+3. RATING TARGET: "Aim for X+ rating as average competitor rating is Y (from scraped data)"
+4. OFFERS: "Introduce [specific offer] similar to competitors offering [scraped offers]"
+5. LOCATION: "Target [specific area] as competitors are X km away (from scraped data)"
+6. DIFFERENTIATION: "Focus on [unique aspect] as only X% of competitors offer it"
+
+🏨 FOR HOTELS:
+1. ROOM PRICING: "Price rooms at ₹X-₹Y/night as competitors charge ₹A-₹B (from scraped data)"
+2. AMENITIES: "Must include [amenities] as X% of competitors offer them (from scraped data)"
+3. RATING TARGET: "Target X+ rating as competitor average is Y (from scraped data)"
+4. DIFFERENTIATION: "Add [specific amenity] as only X% of hotels provide it (market gap)"
+5. TARGET SEGMENT: "Focus on [segment] based on Y high-income households (from demographics)"
+
+🏫 FOR SCHOOLS:
+1. FEES: "Set fees at ₹X-₹Y annually as competitors charge ₹A-₹B (from scraped data) for [board] schools"
+2. BOARD: "Consider [board] as X% of schools use it (from scraped data), or offer [alternative] to capture Y% market"
+3. RATING TARGET: "Aim for X+ rating as competitor average is Y (from scraped data)"
+4. GRADES: "Offer [grades] as only X% of schools cover this range (market gap from scraped data)"
+5. TARGET MARKET: "Focus on Y children (0-18 yrs) and Z high-income households (from demographics)"
+6. DIFFERENTIATION: "Introduce [specific program] as no competitor offers it (from scraped data)"
+
+═══════════════════════════════════════════════════════════════════════════════
+⚠️ DATA GAP HANDLING
+═══════════════════════════════════════════════════════════════════════════════
+
+If ANY data source is insufficient or missing:
+✓ FLAG it explicitly in cons
+✓ Recommend specific actions to fill the gap
+✓ Suggest manual research methods
+
+Example:
+"⚠️ DATA GAP: Social media validation shows only 3 local posts with 20% confidence. RECOMMEND: Conduct manual Facebook group research, Instagram hashtag analysis (#Zirakpur #CafeLife), and customer surveys to validate demand."
+
+═══════════════════════════════════════════════════════════════════════════════
+🔢 CRITICAL RULES
+═══════════════════════════════════════════════════════════════════════════════
+
+1. NEVER use vague terms: "high", "low", "good", "many", "few" without numbers
+2. ALWAYS cite data source: "(from scraped data)", "(from demographics)", "(from property analysis)"
+3. CALCULATE ranges, averages, percentages from scraped data
+4. IDENTIFY market gaps by comparing what exists vs what's missing
+5. MAKE suggestions unique to THIS query based on THIS data
+6. REFERENCE at least 3 different data sources in your analysis
+7. FLAG any data gaps and recommend how to fill them
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📊 DATA SOURCE PRIORITY
+═══════════════════════════════════════════════════════════════════════════════
+
+Use ALL data sources in your analysis:
+
+1. 📊 PROPERTY FEATURES → Foundation for location viability
+2. 👥 DEMOGRAPHICS → Target market size and purchasing power
+3. 🏪 COMPETITOR ANALYSIS → Market saturation and quality benchmarks
+4. 📱 SOCIAL MEDIA → Demand validation and reputation signals
+5. 🌐 WEB-SCRAPED DATA → Real-time competitive intelligence (MOST IMPORTANT for suggestions)
+
+Each pro/con/suggestion MUST reference at least ONE specific data point.
+Combine multiple sources for stronger insights.
+
+Now provide your analysis in JSON format.
+"""
+    
+    return prompt.strip()

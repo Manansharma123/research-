@@ -1,0 +1,26 @@
+venv
+.venv
+__pycache__
+*.pyc
+.env
+.env.local
+.DS_Store
+*.log
+.pytest_cache
+.coverage
+htmlcov
+.tox
+.nox
+node_modules
+*.md
+!PRODUCTION_DEPLOY.md
+test_*.py
+*.sh
+.git
+.gitignore
+.vscode
+.idea
+
+# Keep data files - they're needed for deployment
+!data/*.csv
+!data/*.db
