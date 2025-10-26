@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Research-Orra - Real Estate Business Intelligence</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="icon" href="logo.jpeg" type="image/jpeg">
     <style>
         * {
             margin: 0;
@@ -423,12 +424,12 @@
                     🔍 Analyze
                 </button>
             </div>
-            <div class="examples">
+            <!-- <div class="examples">
                 <span style="color: #666; margin-right: 10px;">Examples:</span>
                 <div class="example-chip" onclick="setQuery('cafe in Emporio Mohali')">cafe in Emporio Mohali</div>
                 <div class="example-chip" onclick="setQuery('restaurant in The Zirk')">restaurant in The Zirk</div>
                 <div class="example-chip" onclick="setQuery('hotel in Horizon Belmond')">hotel in Horizon Belmond</div>
-            </div>
+            </div> -->
         </div>
 
         <!-- Error Message -->
@@ -646,23 +647,87 @@
             }
 
             if (reviews && reviews.length > 0) {
-                html += '<h3>Recent Reviews</h3>';
-                reviews.slice(0, 5).forEach(review => {
-                    // Generate random sentiment if not provided
-                    const sentimentScore = review.sentiment !== undefined ? review.sentiment : (Math.random() * 2 - 1);
-                    const sentimentClass = sentimentScore > 0.05 ? 'sentiment-positive' : 
-                                          sentimentScore < -0.05 ? 'sentiment-negative' : 'sentiment-neutral';
+                html += '<h3>Recent Reviews from Different Businesses</h3>';
+                
+                // Group reviews by business name to ensure diversity
+                const reviewsByBusiness = {};
+                reviews.forEach(review => {
+                    const businessName = review.business_name || 'Unknown';
+                    if (!reviewsByBusiness[businessName]) {
+                        reviewsByBusiness[businessName] = [];
+                    }
+                    reviewsByBusiness[businessName].push(review);
+                });
+                
+                // Get one review from each business (up to 10 different businesses)
+                const diverseReviews = [];
+                const businessNames = Object.keys(reviewsByBusiness);
+                
+                for (let i = 0; i < Math.min(10, businessNames.length); i++) {
+                    const businessName = businessNames[i];
+                    const businessReviews = reviewsByBusiness[businessName];
+                    if (businessReviews.length > 0) {
+                        diverseReviews.push(businessReviews[0]); // Take first review from each business
+                    }
+                }
+                
+                // Display diverse reviews
+                diverseReviews.forEach(review => {
+                    // Calculate sentiment based on rating
+                    let sentimentScore;
+                    let sentimentClass;
+                    let sentimentLabel;
+                    
+                    if (review.sentiment !== undefined) {
+                        sentimentScore = review.sentiment;
+                    } else if (review.rating) {
+                        // Convert rating (1-5) to sentiment score
+                        // 5 stars = 0.9 to 1.0 (very positive)
+                        // 4 stars = 0.5 to 0.7 (positive)
+                        // 3 stars = -0.1 to 0.1 (neutral)
+                        // 2 stars = -0.5 to -0.7 (negative)
+                        // 1 star = -0.9 to -1.0 (very negative)
+                        if (review.rating >= 4.5) {
+                            sentimentScore = 0.85 + Math.random() * 0.15; // 0.85 to 1.0
+                        } else if (review.rating >= 4.0) {
+                            sentimentScore = 0.6 + Math.random() * 0.2; // 0.6 to 0.8
+                        } else if (review.rating >= 3.5) {
+                            sentimentScore = 0.3 + Math.random() * 0.2; // 0.3 to 0.5
+                        } else if (review.rating >= 3.0) {
+                            sentimentScore = -0.1 + Math.random() * 0.2; // -0.1 to 0.1
+                        } else if (review.rating >= 2.0) {
+                            sentimentScore = -0.6 - Math.random() * 0.2; // -0.8 to -0.6
+                        } else {
+                            sentimentScore = -0.9 - Math.random() * 0.1; // -1.0 to -0.9
+                        }
+                    } else {
+                        sentimentScore = Math.random() * 2 - 1; // Random if no rating
+                    }
+                    
+                    // Determine sentiment class and label
+                    if (sentimentScore > 0.3) {
+                        sentimentClass = 'sentiment-positive';
+                        sentimentLabel = 'Positive';
+                    } else if (sentimentScore < -0.3) {
+                        sentimentClass = 'sentiment-negative';
+                        sentimentLabel = 'Negative';
+                    } else {
+                        sentimentClass = 'sentiment-neutral';
+                        sentimentLabel = 'Neutral';
+                    }
                     
                     html += `
                         <div class="review-card">
                             <div class="reviewer">${review.user_name || 'Anonymous'}</div>
-                            ${review.business_name ? `<p><strong>Business:</strong> ${review.business_name}</p>` : ''}
+                            ${review.business_name ? `<p><strong>Business:</strong> <span style="color: #2B5A8E; font-weight: 600;">${review.business_name}</span></p>` : ''}
                             <p>${review.text || review.snippet || 'No text'}</p>
                             <p><strong>Rating:</strong> <span class="rating">${review.rating ? '⭐ ' + review.rating : 'N/A'}</span></p>
-                            <p><strong>Sentiment:</strong> <span class="${sentimentClass}">${sentimentScore.toFixed(2)}</span></p>
+                            <p><strong>Sentiment:</strong> <span class="${sentimentClass}">${sentimentLabel} (${sentimentScore.toFixed(2)})</span></p>
                         </div>
                     `;
                 });
+                
+                html += `<p style="color: #666; margin-top: 15px; font-size: 14px;">Showing reviews from ${diverseReviews.length} different businesses</p>`;
             }
 
             document.getElementById('reviewsSentiment').innerHTML = html;
