@@ -1,0 +1,14 @@
+name,lat,lon,address,types
+Sharma Cafe,30.7207,76.7589,"Sector 17, Chandigarh",cafe
+Sharma Cafe,30.7401,76.7926,"Sector 8, Chandigarh",cafe
+Gupta Medical Store,30.7361,76.7894,"Sector 17, Chandigarh",pharmacy
+Gupta Medical Store,30.7445,76.8012,"Sector 22, Chandigarh",pharmacy
+Gupta Medical Store,30.7536,76.8324,"Sector 34, Chandigarh",pharmacy
+ABC Restaurant,30.7298,76.7731,"Sector 9, Chandigarh",restaurant
+ABC Restaurant,30.7298,76.7733,"Sector 10, Chandigarh",restaurant
+XYZ Bookstore,30.7350,76.7900,"Sector 17, Chandigarh",bookstore
+XYZ Bookstore,30.7450,76.8000,"Sector 22, Chandigarh",bookstore
+XYZ Bookstore,30.7550,76.8100,"Sector 34, Chandigarh",bookstore
+XYZ Bookstore,30.7650,76.8200,"Sector 45, Chandigarh",bookstore
+Cafe Greko,30.7207,76.7589,"Sector 17, Chandigarh",cafe
+Cafe Greko,30.7401,76.7926,"Sector 8, Chandigarh",cafe
